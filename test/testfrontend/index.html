@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>별자리 운세</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="style.css"> 
+
+</head>
+<body>
+    <div id="intro" class="intro-container">
+        <h1>별자리 운세</h1>
+        <img src="cat.png" alt="catdoge" class="center-image">
+        <label for="date">생년월일:</label>
+        <input type="date" id="date">
+        
+        <label for="hour">태어난 시간:</label>
+        <input type="time" id="hour">
+        
+        <button onclick="start()">운세 시작</button>
+    </div>
+    
+    <div id="chat" class="chat-container" style="display: none;">
+        <div class="chat-bubble user-bubble">
+            안녕하세요! 별자리 운세를 확인해주세요.
+        </div>
+        <div id="fortuneResponse"></div>
+        <div id="loader" style="display: none;">로딩 중...</div>
+        <input type="text" id="messageInput" placeholder="메시지를 입력하세요">
+        <button onclick="sendMessage()">전송</button>
+    </div>
+    
+    <script src="fortune.js"></script>
+</body>
+</html>

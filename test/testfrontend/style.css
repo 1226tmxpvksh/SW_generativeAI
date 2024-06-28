@@ -1,0 +1,97 @@
+body {
+    font-family: 'Times New Roman', serif;
+    background-color: #2c2c2c;
+    color: black;
+    margin: 0;
+    padding: 0;
+}
+
+.intro-container, .chat-container {
+    max-width: 600px;
+    margin: 50px auto;
+    padding: 20px;
+    background-color: rgba(0, 0, 0, 0.7);
+    border-radius: 10px;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.center-image {
+    max-width: 80%;
+    height: auto;
+    margin: 20px 0;
+}
+
+h1 {
+    font-size: 36px;
+    color: #ffd700;
+    margin-bottom: 20px;
+}
+
+label {
+    display: block;
+    margin-top: 10px;
+    margin-bottom: 5px;
+    color: #ffd700;
+}
+
+input[type="date"], input[type="time"], input[type="text"] {
+    width: calc(100% - 40px);
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #ffd700;
+    border-radius: 5px;
+    background-color: #3c3c3c;
+    color: #ffd700;
+    font-size: 16px;
+}
+
+button {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    background-color: #ffd700;
+    color: #2c2c2c;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #e6c200;
+}
+
+#chat {
+    display: none;
+}
+
+.chat-bubble {
+    margin: 10px;
+    padding: 10px;
+    border-radius: 10px;
+}
+
+.user-bubble {
+    background-color: #e0f7fa;
+    text-align: right;
+}
+
+.bot-bubble {
+    background-color: #fff9c4;
+}
+
+#loader {
+    display: none;
+    text-align: center;
+    margin: 20px 0;
+    color: #ffd700;
+}
+
+#fortuneResponse {
+    max-height: 400px;
+    overflow-y: auto;
+    margin-bottom: 10px;
+}
