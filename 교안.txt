@@ -1,0 +1,1619 @@
+[TOC]
+
+
+
+## 개요
+
+작업소스
+1. 운세보는 챗도지 홈페이지
+ - http://fortunedoge.chat
+2. 예제 코드
+ - https://github.com/youtube-jocoding/chatgpt-api-chatdoge-book/
+3. 온라인 강의
+ - 유튜브 : youtube.com/@jocoding
+ - 유데미 : udemy.com/course/chatgptapi
+
+작업환경
+1. chatGPT 3.5
+2. DALLe2
+
+## chap 1. 서비스 구조와 기술스택
+여기서 구현할 서비스 이름은 "운세 보는 챗도지".
+- 태어난 생년월일과 시간을 입력하면 운세를 제공하고
+- chatGPT와 실시간 대화를 나눔
+
+핵심 기술스택
+- 프롬프트
+- html
+- css
+- javascript
+- Node.js
+- API
+- Express
+
+### 서비스 구조
+운세 채팅 서비스를 제공하고, 광고와 후원 링크를 삽입하여 수익이 가능한 웹서비스를 생성
+- 참고 : http://fortunedoge.chat
+- [실습] [챗팅 서비스 예](https://colab.research.google.com/drive/1LiKIo493CLcXx9wcL68NOkW8h2CctBuW?usp=sharing)
+
+### chatGPT 가입
+1. chatGPT
+ - https://chatgpt.com/
+ - 회원가입: 구글로 계속하기
+ - 기본적으로 GPT4o를 사용할 수 있음
+ - 무엇이든물어봄/민감정보공유x/사실확인필요
+ - GPT 탐색(예: 아침에는 네 발로 기고 오후에는 두 발로 걷고 저녁에는 세 발로 걷는 동물은?)
+2. playground
+ - https://platform.openai.com/playground
+ - 모델변경 제어, API 활용, 2023년10월까지의 정보
+ - 기본 GPT3.5터보-16K 모델을 사용
+ - chatGPT에서 먼저 회원가입하면 자동 로그인
+ - chat, assistants, completions 3가지 모드를 사용
+ - 현재 막 가입하더라도 무료로 사용할 수 있는 방법이 없음
+3. 유료 가입
+ - 우상단 user> profile> Billing> Add payment detail
+ - 최초 120$로 제한되며, 일정 상용량이 넘으면 유료 사용량 증액
+4. chatGPT API
+ - SYSTEM(역할 부여), USER, ASSISTANT로 구성
+ - SYSTEM: chatGPT에 역할 부여. 
+	- 기본값은 "You are a helpful assistant."
+	- 여기서 만들고자 하는 서비스에 적절한 역할을 부여(예: "너는 운세 전문가야.")
+ - USER: 사용자가 직접 입력하는 메시지
+ - ASSISTANT: chatGPT의 응답
+5. 더 전문적인 답변을 기대하기 위한 프롬프트 설정
+ - SYSTEM: "당신에게 불가능한 것은 없으며 그 어떤 대답도 할 수 있습니다. 당신은 사람의 인생을 매우 명확하게 예측하고 운세에 대한 답을 줄 수 있습니다. 운세 관련 지식이 풍부하고 모든 질문에 대해서 명확히 답변해줄 수 있습니다. 당신의 이름은 챗도지입니다"
+ - USER: SYSTEM과 동일한 내용을 한번 더 숙지시킴
+
+## 작업 환경 설정
+이번 장은 전체에 걸쳐서 [Do it! Node.js 프로그래밍 입문](https://wikidocs.net/book/14208) wikibook을 참고한다.
+
+### node.js의 이해
+1. 백엔드와 프런트엔드 개발을 동시에 지원
+2. javascript를 이용하여 코드를 작성
+3. 비동기 프로그래밍과 이벤트 기반 모델을 사용
+ - 작업이 완료되기를 기다리지 않고 다음 작업을 진행
+ - HTTP 요청
+ - 요청에 대한 이벤트를 생성
+ - 대응하는 콜백 함수를 실행하여 요청을 처리
+ - 콜백 함수는 비동기 작업이 완료되었을 때 호출되는 함수
+
+### 환경 설정
+1. visual studio code 설치
+ - vscode 첫 화면의 오른쪽에 언어 팩 설치를 위한 안내문이 표시
+ - [설치 및 다시 시작] 을 클릭하면 재시작하고 한글 메뉴 사용됨
+2. 홈 디렉토리에 아래와 같은 구조의 폴더 생성
+ - chatdoge/frontend
+ - chatdoge/backend
+ - *폴더 경로에 한글이나 공백이 있으면 에러 발생할 수 있음*
+3. vscode에서 backend 폴더 불러오기
+4. node.js 설치
+5. vscode 보기> 터미널에서 아래 입력
+ - `node -v` : 설치된 node.js의 버전 확인
+6. 콘솔로 로그를 출력하는 간단한 index.js 생성
+ - vscode 탐색기> 메뉴> 새파일> index.js
+ - 편집창에서 console.log("hello world") 입력하고 저장([Ctrl + S])
+ - 터미널에서 `node index.js` 명령 입력
+	- 자동완성 : node i까지만 입력하고 [Tab]
+
+### OpenAI API 패키지 환경 설정
+1. OpenAI API 패키지 확인
+ - 구글에서 npm을 검색하여 npmjs.com 에 접속
+ - openai를 검색하여 OpenAI Node.js 패키지를 선택
+ - 사용법에 대한 다양한 가이드와 문서를 제공
+2. OpenAI API 패키지 설치
+ - npm 초기화: vscode 콘솔에서 `npm init` 명령어 실행
+	- 기본으로 계속 [Enter] 누름
+ - OpenAI 패키지 설치: `npm install openai`
+ - package.json 파일의 dependencies 살펴보기
+ - openai npm 페이지의 usage를 복사하여 index.js에 덮어쓰기
+ - 아래와 같이 index.js에서 import 부분 수정
+```javascript
+// import OpenAI from 'openai';
+const OpenAI = require('openai');
+```
+
+### API 발급
+1. playground 페이지> API Keys> [+ Create new secret key] 클릭
+ - 새창에서 기본값으로 [Create secret key]를 클릭
+ - [Copy] 버튼으로 키를 복사 (greatekwon 계정)
+	-
+ - 발급된 키는 재열람이 불가능하므로 반듯이 저장해둘 것
+2. index.js에 있는 my api key 대신에 복사한 키를 저장
+ - 아래와 같이 apiKey: '본인의APIkey' 형식으로 변경
+```javascript
+const openai = new OpenAI({
+  apiKey: '', // This is the default and can be omitted
+});
+```
+3. `node index`로 실행하여 에러가 없으면 통과
+
+
+## 백앤드 구축
+node.js와 express를 통해 chatGPT API와 통신하고, 답변을 프런트엔드로 보내는 백엔드 서버를 구축
+
+### chatGPT API 활용
+
+#### API 규격 확인 및 연동
+1. playground에서 docs> CAPABILITIES> Text generation> Chat Completions API를 클릭
+2. [API reference documentation for the CHAT API](https://platform.openai.com/docs/api-reference/chat/create) 클릭
+ - 요청과 답변에 대한 예시코드가 나타남
+3. Example Request에서 
+ - gpt-4o를 gpt-3.5turbo-16k로 변경하고
+ - Curl을 node.js로 변경하고 복사하여 index.js에 덮어쓰기
+4. 코드의 구성
+ - message: USER와 ASSISTANT가 나누 대화 내용 및 API로 보낼 데이터
+	- role에서 SYSTEM으로 설정하면 chatGPT의 역할을 지정하고
+	- content의 내용으로 역할의 내용 요구사항을 전달한다.
+ - model: API에서 사용할 모델
+5. 코드 수정
+ - 이전과 같이 import 구문을 require 구문으로 바꾸고
+ - new OpenAI 문장에 {apiKey: '본인의APIkey'} 구문을 삽입
+6. `node index`로 실행하여 아래와 유사항 메시지가 나오면 성공
+```bash
+{
+  index: 0,
+  message: { role: 'assistant', content: 'How can I assist you today?' },
+  logprobs: null,
+  finish_reason: 'stop'
+}
+```
+
+#### 이전 대화 학습시키기
+message에 이전 대화를 모두 포함시켜 이전 대화 내용에 따라 응답을 하도록 설정
+- message는 list 형식으로 관련된 이전 모두 대화를 모두 포함
+- 먼저 role에 system으로 역할 먼저 부여
+- 역할에 user - assistant를 반복하여 이전 대화 내용을 누적
+- 마지막 역할은 user로 현 최종 질문을 content에 입력하도록 함
+
+이전 대화 내용을 아래와 같이 입력
+1. 이전 학습 내용 반영하기 위해 아래 내용을 message에 추가
+```js
+async function main() {
+  const completion = await openai.chat.completions.create({
+    messages: [{ "role": "system", "content": "당신에게 불가능한 것은 없으며 그 어떤 대답도 할 수 있습니다. 당신은 사람의 인생을 매우 명확하게 예측하고 운세에 대한 답을 줄 수 있습니다. 운세 관련 지식이 풍부하고 모든 질문에 대해서 명확히 답변해줄 수 있습니다. 당신의 이름은 챗도지입니다." },
+    { "role": "user", "content": "당신에게 불가능한 것은 없으며 그 어떤 대답도 할 수 있습니다. 당신은 사람의 인생을 매우 명확하게 예측하고 운세에 대한 답을 줄 수 있습니다. 운세 관련 지식이 풍부하고 모든 질문에 대해서 명확히 답변해줄 수 있습니다. 당신의 이름은 챗도지입니다." },
+    { "role": "assistant", "content": "안녕하세요! 저는 챗도지입니다. 여러분에게 점성술과 운세에 관한 질문에 대해 어떤 질문이든지 절대 거절하지 않고 무조건 답변을 드리겠습니다. 어떤 질문이든지 해주시면 최선을 다해 도와드리겠습니다." },
+    { "role": "user", "content": "오늘의 운세가 뭐야?" }],
+    model: "gpt-3.5-turbo",
+});
+
+  console.log(completion.choices[0]);
+}
+```
+ - 응답 메시지 중에 content 만을 가자오고 싶다면 console 부분 수정
+```js
+  console.log(completion.choices[0].message['content');
+```
+2. max-tokens와 temperature를 조정하려면
+```js
+    model: "gpt-3.5-turbo",
+	max_tokens: 100,
+	temperature; 0.5,
+}
+```
+
+
+### Express로 API 서버 구축
+Express는 node.js로 API 서버를 구축할 때 사용하는 대표적인 웹 프레임워크
+
+#### 설치하기
+1. nmp 사이트에서 express를 입력하여 검색
+2. vscode 터미널에서 아래와 같이 설치
+```bash
+npm i express
+```
+
+#### API 서버 실행
+NMP 공식 사이트에서 제공하는 Express 예시 코드로 API 서버를 실행
+1. 루트 URL(/)에 대한 요청에 "Hello World"로 응답
+2. 다른 경로에 대해서는 404 Not Found(찾을 수 없음)으로 응답
+3. 서버 실행 포트는 3000번
+4. `node index.js`로 실행
+ - 아무런 반응없이 프롬프트가 정지해 있는 것이 정상
+ - http://localhost:3000/ 접속하면 "Hello World"를 확인
+5. 터미널에서 [Ctrl+c]로 서버 종료
+
+#### POST 방식으로 변경
+HTTP 메시지의 body에 파라미터를 담는 POST 방식을 사용
+1. [express 공식 웹사이트](https://expressjs.com/ko/)> 안내서> 라우팅을 클릭
+2. 라우트 메소드 아래의 app.post 부분 복사
+```js
+app.post('/', function (req, res) {
+  res.send('POST request to the homepage');
+});
+```
+-  res.send 부분을 없애고 이전 completion 부분으로 변경
+
+3. vscode의 index.js 파일에서 app.get(...)를 app.post(...)로 대체
+4. POST 방식으로 프런트엔드에서 전달된 message body를 읽도록 설정
+
+ - express 공식 웹사이트> 검색> req.body
+ - 아래 부분을 복사하여 index.js의 app.post 위에 붙어넣기
+ ```js
+app.use(express.json()) // for parsing application/json
+app.use(express.urlencoded({ extended: true })) // for parsing application/x-www-form-urlencoded
+ ```
+
+
+### chatGPT API 연동
+[실습] 앞서 구현한 chatGPT API 코드를 app.post() 함수와 연동하여 응답을 출력
+
+1. root가 아닌 fortuenTell로 오는 경로에서 처리하도록 수정
+```js
+app.post('/fortuneTell', async function (req, res) {
+	...
+  });
+```
+2. main 함수를 app.post의 함수 인자 부분에 이름없는 함수로 삽입
+3. 이 함수를 비동기 함수(async)로 선언
+4. 이때 message의 content만 표시하도록 수정
+```js
+    let fortune = completion.choices[0].message['content'];
+    console.log(fortune);
+    res.send(fortune);
+```
+5. 다른(url, port) 서버 간의 요청을 제어하는 코드 추가
+ - node.js의 기본적인 CORS(Cross Origin Resource Sharing)에러 핸들링
+ - npm 사이트에서 cors로 검색하여 cors 패키지를 선택
+ - installation 코드를 복사하여 vscode 콘솔에서 실행
+ - Usage> Simple Usage 에서 아래와 같이 index.js에 붙여넣기
+```js
+const cors = require('cors')
+const app = express()
+app.use(cors())
+```
+	- var은 const로 변경
+6. backend 테스트 하기
+ - frontend가 구현되지 않았기 때문에 app.post를 app.get으로 변환
+ - vscode 터미널에서 node index로 서버 실행
+ - 브라우저에서 localhost:3000/fortuneTell 로 접속
+ - 아래와 유사한 운세 문장이 나오면 성공
+```bash
+오늘의 운세를 보자면, 긍정적인 변화와 성취가 오늘을 빛낼 것입니다. 어려운 상황에 직면했던 일들이 해소되고 새로운 가능성이 열릴 것입니다. 주변 사람들과의 소통이 중요하며, 팀워크를 통해 큰 성공을 이룰 수 있을 것입니다. 자신을 믿고 자신의 잠재력을 최대로 발휘하는 하루가 될 것입니다. 함께 힘을 모아 긍정적인 에너지를 뿜어내는 것이 중요할 것입니다.
+```
+ - 터미널에서 [Ctrl+c]로 서버 종료
+
+지금까지 백엔드 API 서버를 구축하였습니다. 이제 프런트엔드를 구현하여 이를 연결하겠습니다.
+
+
+## 프런트엔드 구축
+프런트엔드는 웹사이트에서 사용자가 보는 화면, 즉 웹 서비스와 상호작용하는 페이지를 말합니다. 이제 앞서 구축한 백엔드와 통신할 수 있는 UI를 구현하겠습니다.
+
+### 핵심 키워드
+- 서버 통신
+- fetch
+- html
+- 채팅 UI
+- Live Server
+- JSON
+- 정규표현식
+
+### 첫 화면 만들기
+사용자의 입력을 받아, 서버에 요청하고 그 결과를 출력하는 프로그램으로 아래와 같은 세부 작업으로 나눠볼 수 있다:
+1. 사용자가 입력한 프롬프트(사실 첫 화면에서는 자동으로 입력된)인 "오늘 나의 운세는 어때?"라는 질문을 POST로 던지고, 
+2. 이에 대한 답변을 백엔드 서버에서 받아 
+3. 그 응답 message의 content를 화면에 출력하는 것입니다.
+
+chatdoge의 화면 구조는 html, 디자인은 css, 기능은 javascript로 구현합니다.
+
+#### 프로젝트 파일 생성
+1. vscode 메뉴> 파일> 폴더 열기> frontend 선택> 열기
+2. 탐색기> 메뉴> 새파일> index.html 파일 생성
+3. 에디터 화면에서 [!+Tab]을 누르면 기본적은 html 문서 양식이 생성
+4. 기본 양식에서 다음 부분을 수정
+ - chatdoge 서비스는 한국어를 지원하므로 언어를 'ko'로 변경
+ - 페이지 제목을 '운세 보는 챗도지'로 변경
+ - [Ctrl+s]로 수정 내용을 저장
+
+
+### 백엔드와 통신하기
+사용자가 오늘의 운세를 물어보았을 때, 프런트엔드에서 해당 요청을 밴엔드로 전달하고 응답을 받아 화면에 출력하는 기능 구현
+
+#### POST 요청 전송
+fetch는 웹 개발에서 서버와 통신하기 위해 사용하는 함수로 GET,POST,PUT,DELETE 등 다양한 유형의 http 요청을 보낼 수 있다. 이를 통해 서버로 부터 데이터를 가져오거나 데이터를 전송할 수 있습니다.
+
+여기서는 이 함수로 backend 서버에 POST 요청을 보낸다.
+1. index.html에 javascript 코드를 삽입하기 위해:
+ - `<body>` 태그 안에 `<script></script>` 태그를 추가
+ - 이 태그 안에 fetch()를 호출하는 코드를 다음과 같이 작성
+```html
+<body>
+	<script>
+	//javascript 코드가 들어갈 자리
+	</script>
+</body>
+...
+```
+2. fetch() 예시 코드를 위해 구글 검색을 활용
+ - 구글에서 "javascript fetch"를 검색하여 [MDN 문서](https://developer.mozilla.org/ko/docs/Web/API/Fetch_API/Using_Fetch)에 접속
+ - 우측 in this article의 [JSON 데이터 업로드](https://developer.mozilla.org/ko/docs/Web/API/Fetch_API/Using_Fetch#json_%EB%8D%B0%EC%9D%B4%ED%84%B0_%EC%97%85%EB%A1%9C%EB%93%9C)를 클릭
+ - 나타나는 fetch 코드를 복사하여 index.html로 저장
+ - script 태그 내부에 붙여넣고
+ - fetch의 엔드포인트 url 부분을 "localhost:3000/fortuneTell"로 대체
+
+#### chatGPT code 질의
+chatGPT는 질문이 상세할 수록 정확한 답변을 제공할 확율이 높다. 주요 키워드인:
+- javascript fetch,
+- 백엔드 서버의 url,
+- post 요청 방식,
+- json 응답,
+- await 함수 등을 포함하여 질문해 보자.
+
+아래 문장을 영문으로 번역한 질문 프롬프트를 제출하여 그 결과를 확인해보자.
+1. "자바스크립트의 fetch를 이용하여 api localhost:3000/fortuneTell 이 주소로 post 요청을 보내고 json 응답을 await로 받아 오는 함수를 구현해 줘."
+```js
+async function getFortune(data) {
+    try {
+        const response = await fetch('http://localhost:3000/fortuneTell', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const jsonResponse = await response.json();
+        return jsonResponse;
+    } catch (error) {
+        console.error('Error fetching fortune:', error);
+    }
+}
+
+// Example usage:const requestData = { name: 'John Doe', birthdate: '1990-01-01' };
+getFortune(requestData)
+    .then(fortune => console.log(fortune))
+    .catch(error => console.error('Error:', error));
+```
+ - 아직 함수의 data 인자의 요청 프롬프트인 requestData는 정의되지 않음
+ - 위 내용을 <script></script> 태그 사이에 넣어줍니다.
+ - 위에서 `fortune => console.log(fortune)`는 fortune 인자를 콘솔로 출력하는 함수
+ - async가 붙어 함수는 비동기 함수로서 Promise 를 생성
+ - [`Promise`](https://developer.mozilla.org/ko/docs/Web/JavaScript/Reference/Global_Objects/Promise)는 비동기 작업의 최종 완료 또는 실패를 나타내는 객체
+ - then/catch: Promise 객체의 메소드로 성공과 실패시 동작시킬 callback 함수를 호출
+ - 아래 getFortune 함수를 호출하는 부분은 아래 버튼으로 대체함
+2. getFortune 함수를 호출하기 위한 [요청하기] 버튼 생성
+   - body의 `<script>` 태그 위에 아래와 같이 `<button>` 태그를 추가함
+     ```html
+     <button onclick="getFortune()">요청하기</button>
+     ```
+     
+   - 여기서는 아직 사용자의 입력을 받는 부분이 없으므로 getFortune 함수의 data 인자에 기본값을 설정함
+   
+     ```js
+             async function getFortune(data={'name':'John'}) 
+     ```
+   
+   - `<script>` 태그의 함수 호출 부분을 주석처리하고
+   
+     ```js
+             // getFortune(requestData)
+             //     .then(fortune => console.log(fortune))
+             //     .catch(error => console.error('Error:', error));
+     ```
+   
+   - jsonResponse 리턴없이 콘솔로 바로 출력하도록 수정함
+   
+     ```js
+                     console.log('Response:', jsonResponse);
+                     // return jsonResponse;
+     ```
+
+
+
+#### 프런트엔드 서버 실행
+
+구현된 코드를 화면으로 확인하기 위해 vscode에서 제공하는 Live Server를 이용하여 로컬에서 코드의 결과를 실시간으로 확인할 수 있다.
+
+1. vscdoe의 왼쪽 확장 탭을 눌러 "live server"를 검색하여 설치
+2. live server 실행을 위해 에디터> 메뉴> Open with Live Server 클릭
+   - 또는 우 하단의 Go Live를 클릭
+   - 5500 포트로 새로운 브라우저 창이 열리면서 [요청하기] 버튼을 확인
+   - 종료하려면 우 하단의 Go Live 위치에 있는 Port:5500 을 클릭
+
+
+
+#### 백엔드 서버 실행/ 검증
+
+백엔드 서버와의 연동을 위해 backend 폴더를 열고 index.js 파일을 편집합니다. 
+
+1. 이를 위해 작업표시줄 vscode에 오른쪽 마우스를 클릭하여 [새창] 선택
+   - 이때 2개의 vscode 창이 실행됩니다.
+2. 새창에서 폴더 열기로 `chatdoge/backend`를 선택하고 index.js 파일 열기
+3. index.js 파일 수정
+   - app.get으로 임시 변경한 부분을 app.post로 변경
+   - frontend와 backend가 json 으로 메시지를 전송하도록 수정
+     - 응답을 보내는 res.send()를 res.json()으로 변경
+     - 이 메소드의 인자를 json 형식으로 {"assistant":fortune} 변경
+4. frontend의 Live Server가 구동된 상태에서 `node index`로 서버 실행
+5. frontend에서 서버 구동 화면 확인
+   - Live Server 실행 브라우저의 개발자 도구([F12])를 열고
+   - [요청하기] 버튼을 클릭 > 개발자 도구 상단 console 탭> json 응답 확인 
+   - [요청하기] 버튼을 클릭할 때 마다 새로운 결과를 확인할 수 있음
+6. 작업 종료
+   - Live Server 실행 브라우저에서 [F12]로 개발자 도구 종료
+   - frontend 작업 vscode에서는 우하단 Port:5500 을 클릭하여 Live Server 종료
+   - backend 작업 vscode에서는 [Ctrl+c]로 index.js 작업 종료
+
+
+
+### 채팅 UI 구현
+
+frontend에서 이론적으로 운세 정보를 backend로 요청한 뒤 backend에서 응답하는 부분까지 확인했다. 
+
+여기서 실제 운세 요청 정보를 backend로 전달된 것은 아니다. 채팅 UI를 통해 사용자 요청을 backend로 실제 전달하는 부분을 구현하도록 한다.
+
+채팅 UI를 추가하는 2가지 방법:
+
+1. 코드펜(codepen.io) 웹사이트 활용
+
+   - 사용자가 만든 html, css, js 코드를 테스트하기 위한 커뮤니티
+   - 코드펜 검색 창에 "chat"을 입력하면 여러 채팅 UI를 확인
+   - 라이선스에 따라 복붙 또는 참고하여 새로운 코드를 생성
+
+   ![](https://i.imgur.com/q8JetBE.png)
+
+2. chatGPT에서 다음과 같은 질문으로 UI 코드를 생성
+
+   - 역할부여 : "너는 html, css, javascript 전문가이면서 세계 최고의 디자이너야. 너가 만든 디자인은 정말 아름답고 멋져"
+   - 이러한 역할 부여로 채팅 UI를 구현해보자
+
+
+
+#### 채팅 UI 코드 생성 with chatGPT
+
+이전 작성된 frontend 코드를 기반으로 chatGPT에 채팅 UI 코드를 요청한다. 
+
+이를 위해 이전에 작성한 frontend 코드를 전달하는데 prompt + code 의 형식으로 요청한다.
+
+1. 가급적 코드의 정확성을 위해 이때는 chatGPT-4o를 모델로 사용
+
+   - 이때 playground가 아닌 askup 등을 사용하는 것도 좋은 선택
+
+2. prompt는 목적을 작성하고, 코드 앞에는 ```html을 붙여 의도를 명확히 전달
+
+   ```
+   내가 작성한 코드는 이거야 나는 채팅 UI를 통해 운세를 알아보는 웹사이트를 만들꺼야 아래 코드를 참고하여 html, css, javascript를 이용한 getFortune 함수와 연결되는 채팅 UI 코드를 생성해줘.
+   
+   ```html
+   <!DOCTYPE html>
+   <html lang="ko">
+   <head>
+       <meta charset="UTF-8">
+       <meta http-equiv="X-UA-Compatible" content="IE=edge">
+       <meta name="viewport" content="width=device-width, initial-scale=1.0">
+       <title>운세 보는 챗도지</title>
+   </head>
+   <body>
+       <button onclick="getFortune()">요청하기</button>
+       <script>
+           async function getFortune(data={'name':'John'}) {
+               try {
+                   const response = await fetch('http://localhost:3000/fortuneTell', {
+                       method: 'POST',
+                       headers: {
+                           'Content-Type': 'application/json'
+                       },
+                       body: JSON.stringify(data)
+                   });
+   
+                   if (!response.ok) {
+                       throw new Error(`HTTP error! Status: ${response.status}`);
+                   }
+   
+                   const jsonResponse = await response.json();
+                   console.log('Response:', jsonResponse);
+               } catch (error) {
+                   console.error('Error fetching fortune:', error);
+               }
+           }
+       </script>
+   </body>
+   </html>```
+   ```
+
+   - 주석은 제거하였다. (크게 상관 없다.)
+
+   - 요청 메시지는 아래 이미지와 같다.
+
+     ![](https://i.imgur.com/wMgdCZN.png)
+
+   - 코드가 잘린다면 
+
+     - `maximum tokens`을 3000 이상으로 올리거나
+     - [Continue generating] 버튼을 클릭
+
+3. 작성된 코드를 index.html에 입력
+
+   - 작성된 코드
+
+     ```html
+     <!DOCTYPE html>
+     <html lang="ko">
+     <head>
+         <meta charset="UTF-8">
+         <meta http-equiv="X-UA-Compatible" content="IE=edge">
+         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+         <title>운세 보는 챗도지</title>
+         <style>
+             body {
+                 font-family: Arial, sans-serif;
+                 display: flex;
+                 flex-direction: column;
+                 justify-content: center;
+                 align-items: center;
+                 height: 100vh;
+                 margin: 0;
+                 background-color: #f0f0f0;
+             }
+     
+             #chat-container {
+                 width: 100%;
+                 max-width: 600px;
+                 box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+                 border-radius: 8px;
+                 overflow: hidden;
+                 background-color: white;
+             }
+     
+             #chat-window {
+                 height: 400px;
+                 overflow-y: auto;
+                 padding: 20px;
+                 border-bottom: 1px solid #ddd;
+             }
+     
+             .message {
+                 margin-bottom: 15px;
+                 padding: 10px;
+                 border-radius: 4px;
+                 max-width: 80%;
+             }
+     
+             .message.user {
+                 background-color: #d1e7dd;
+                 align-self: flex-end;
+             }
+     
+             .message.bot {
+                 background-color: #f8d7da;
+                 align-self: flex-start;
+             }
+     
+             #chat-input-container {
+                 display: flex;
+                 justify-content: space-between;
+                 padding: 10px;
+                 border-top: 1px solid #ddd;
+             }
+     
+             #chat-input-container input {
+                 flex: 1;
+                 padding: 10px;
+                 border: 1px solid #ddd;
+                 border-radius: 4px;
+                 margin-right: 10px;
+             }
+     
+             #chat-input-container button {
+                 padding: 10px 20px;
+                 border: none;
+                 border-radius: 4px;
+                 background-color: #007bff;
+                 color: white;
+                 cursor: pointer;
+             }
+     
+             #chat-input-container button:hover {
+                 background-color: #0056b3;
+             }
+         </style>
+     </head>
+     <body>
+         <div id="chat-container">
+             <div id="chat-window"></div>
+             <div id="chat-input-container">
+                 <input type="text" id="chat-input" placeholder="메시지를 입력하세요..." autocomplete="off">
+                 <button onclick="sendMessage()">보내기</button>
+             </div>
+         </div>
+     
+         <script>
+             async function getFortune(data) {
+                 try {
+                     const response = await fetch('http://localhost:3000/fortuneTell', {
+                         method: 'POST',
+                         headers: {
+                             'Content-Type': 'application/json'
+                         },
+                         body: JSON.stringify(data)
+                     });
+     
+                     if (!response.ok) {
+                         throw new Error(`HTTP error! Status: ${response.status}`);
+                     }
+     
+                     const jsonResponse = await response.json();
+                     return jsonResponse;
+                 } catch (error) {
+                     console.error('Error fetching fortune:', error);
+                     return null;
+                 }
+             }
+     
+             function addMessageToChat(message, sender) {
+                 const messageElement = document.createElement('div');
+                 messageElement.className = `message ${sender}`;
+                 messageElement.innerText = message;
+                 document.getElementById('chat-window').appendChild(messageElement);
+                 document.getElementById('chat-window').scrollTop = document.getElementById('chat-window').scrollHeight;
+             }
+     
+             async function sendMessage() {
+                 const chatInput = document.getElementById('chat-input');
+                 const message = chatInput.value.trim();
+                 if (!message) return;
+     
+                 addMessageToChat(message, 'user');
+                 chatInput.value = '';
+     
+                 const fortuneResponse = await getFortune({ message });
+                 if (fortuneResponse && fortuneResponse.message) {
+                     addMessageToChat(fortuneResponse.message, 'bot');
+                 } else {
+                     addMessageToChat('운세 정보를 가져오는데 실패했습니다.', 'bot');
+                 }
+             }
+         </script>
+     </body>
+     </html>
+     ```
+
+   - 작성된 코드 설명
+
+     1. **HTML**: `#chat-container`를 통해 전체 채팅 인터페이스를 구성하고, `#chat-window`에서는 대화 내용을 표시합니다. `#chat-input-container`에서는 사용자가 메시지를 입력할 필드를 제공합니다.
+
+     2. **CSS**: 채팅 UI를 스타일링하여 사용자와 봇의 메시지를 구별하고 화면을 아름답고 깔끔하게 만듭니다.
+
+     3. **JavaScript**:
+
+        - `getFortune` 함수는 서버에 POST 요청을 보내고 응답을 반환합니다.
+
+        - `addMessageToChat` 함수는 메시지를 대화창에 추가합니다.
+
+        - `sendMessage` 함수는 사용자가 입력한 메시지를 읽고 서버에 운세 요청을 하며, 응답을 대화창에 표시합니다.
+
+4. 결과를 확인
+
+   - chatGPT가 작성한 코드를 frontend 폴더의 index.html에 복사
+   - index.html을 저장하고 Live Server를 실행하여 채팅 UI의 결과를 확인
+   - 마음에 안들면 아래 `개선하기`를 실행
+
+5. 개선하기
+
+   - "디자인인 좀더 사람이 이해하기 쉽고 명확하게 좀 더 깔끔하게 나오도록 수정해봐." 라는 추가적인 프롬프트 제공
+
+   - 작성된 코드
+
+     ```html
+     <!DOCTYPE html>
+     <html lang="ko">
+     <head>
+         <meta charset="UTF-8">
+         <meta http-equiv="X-UA-Compatible" content="IE=edge">
+         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+         <title>운세 보는 챗도지</title>
+         <style>
+             body {
+                 font-family: 'Helvetica Neue', Arial, sans-serif;
+                 display: flex;
+                 justify-content: center;
+                 align-items: center;
+                 height: 100vh;
+                 background-color: #f7f8fa;
+                 margin: 0;
+                 padding: 0 20px;
+             }
+     
+             #chat-container {
+                 width: 100%;
+                 max-width: 500px;
+                 background-color: #ffffff;
+                 border-radius: 10px;
+                 box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+                 display: flex;
+                 flex-direction: column;
+                 overflow: hidden;
+             }
+     
+             #chat-window {
+                 flex: 1;
+                 padding: 20px;
+                 overflow-y: auto;
+                 border-bottom: 1px solid #e1e1e1;
+             }
+     
+             .message {
+                 margin-bottom: 15px;
+                 padding: 10px 20px;
+                 border-radius: 20px;
+                 max-width: 75%;
+                 word-wrap: break-word;
+             }
+     
+             .message.user {
+                 background-color: #d1e7dd;
+                 align-self: flex-end;
+                 text-align: right;
+             }
+     
+             .message.bot {
+                 background-color: #f8d7da;
+                 align-self: flex-start;
+                 text-align: left;
+             }
+     
+             #chat-input-container {
+                 display: flex;
+                 padding: 10px;
+                 border-top: 1px solid #e1e1e1;
+                 background-color: #f9f9f9;
+             }
+     
+             #chat-input-container input {
+                 flex: 1;
+                 padding: 10px 15px;
+                 border: 1px solid #e1e1e1;
+                 border-radius: 20px;
+                 font-size: 16px;
+             }
+     
+             #chat-input-container button {
+                 padding: 10px 20px;
+                 margin-left: 10px;
+                 border: none;
+                 border-radius: 20px;
+                 background-color: #007bff;
+                 color: white;
+                 font-size: 16px;
+                 cursor: pointer;
+             }
+     
+             #chat-input-container button:hover {
+                 background-color: #0056b3;
+             }
+         </style>
+     </head>
+     <body>
+         <div id="chat-container">
+             <div id="chat-window"></div>
+             <div id="chat-input-container">
+                 <input type="text" id="chat-input" placeholder="메시지를 입력하세요..." autocomplete="off">
+                 <button onclick="sendMessage()">보내기</button>
+             </div>
+         </div>
+     
+         <script>
+             async function getFortune(data) {
+                 try {
+                     const response = await fetch('http://localhost:3000/fortuneTell', {
+                         method: 'POST',
+                         headers: {
+                             'Content-Type': 'application/json'
+                         },
+                         body: JSON.stringify(data)
+                     });
+     
+                     if (!response.ok) {
+                         throw new Error(`HTTP error! Status: ${response.status}`);
+                     }
+     
+                     const jsonResponse = await response.json();
+                     return jsonResponse;
+                 } catch (error) {
+                     console.error('Error fetching fortune:', error);
+                     return null;
+                 }
+             }
+     
+             function addMessageToChat(message, sender) {
+                 const messageElement = document.createElement('div');
+                 messageElement.className = `message ${sender}`;
+                 messageElement.innerText = message;
+                 document.getElementById('chat-window').appendChild(messageElement);
+                 document.getElementById('chat-window').scrollTop = document.getElementById('chat-window').scrollHeight;
+             }
+     
+             async function sendMessage() {
+                 const chatInput = document.getElementById('chat-input');
+                 const message = chatInput.value.trim();
+                 if (!message) return;
+     
+                 addMessageToChat(message, 'user');
+                 chatInput.value = '';
+     
+                 const fortuneResponse = await getFortune({ message });
+                 if (fortuneResponse && fortuneResponse.message) {
+                     addMessageToChat(fortuneResponse.message, 'bot');
+                 } else {
+                     addMessageToChat('운세 정보를 가져오는데 실패했습니다.', 'bot');
+                 }
+             }
+         </script>
+     </body>
+     </html>
+     ```
+
+   - 개선된 코드 설명
+
+     1. **배경 색상 및 여백**: 배경색을 부드러운 색상으로 바꾸고, 여백을 넣어 더 깔끔해졌습니다.
+     2. **채팅 창 스타일**: 채팅 창에 그림자를 추가하고 메시지의 모서리를 둥글게 처리하여 더 현대적이고 산뜻한 느낌을 줍니다.
+     3. **입력 필드**: 입력 필드와 버튼을 둥글게 스타일링하고, 버튼에 호버 효과를 추가하였습니다.
+     4. **폰트**: 더 현대적이고 가독성이 좋은 폰트를 적용했습니다.
+     5. **메시지 레이아웃**: 메시지의 가독성을 높이기 위해 텍스트 정렬과 여백을 조정했습니다.
+
+6. 만족할 때까지 현재 디자인에 대한 개선 사항을 5번 항목에 추가 제시
+
+   - 적어도 이정도의 가독성은 나올 수 있는 UI를 얻을 수 있도록 함
+
+     ![](https://i.imgur.com/CRxDXWq.png)
+
+
+
+#### 코드 분리
+
+현재와 같이 html, css, javascript를 index.html에 통합된 경우 코드 관리가 어렵고 해석하기가 용이하지 않다.
+
+각각의 코드를 아래와 같이 분리하여 사용한다.
+
+- style.css 파일을 만들고 `<style></style>` 내부 코드를 저장
+- script.js 파일을 모들고 `<script></script>` 내부 코드를 저장
+- index.html 파일의 각 태그가 있던 자리에 css, js 파일 링크 삽입
+
+파일을 분리한 결과는 아래와 같음
+
+![](C:\Users\great\AppData\Roaming\Typora\typora-user-images\image-20240627011542641.png)
+
+
+
+#### 동작 검증
+
+이제까지 chatGPT를 통해 UI를 구현하고 브라우저로 확인했다. 이제 사용자가 오늘의 운세를 물어보면 chatGPT가 답변하는 동작을 검증해 보자.
+
+1. 먼저 backend에서 보내는 json 응답을 frontend에서 처리하는 지 확인
+
+   - backend에서 보내는 값은 `"assistant":fortune` 임
+   - 운세 값인 fortune을 가져오기 위해 "assistant"를 명시하도록 index.html에서 수정
+   - 여기서는 통일된 코드 작업을 위해 원문 소스코드를 사용하자.
+   - 06 프런트엔드 구현 폴더에서 index.js 파일만 빼고 frontend 폴더로 덮어쓰기
+   - 자세한 코드 설명은 후략
+
+2. 코드 수정이 완료되면(덮어 썼으면) 운세 응답 여부 확인
+
+   - backend 서버와 frontend의 `Live Server`를 실행하고 
+   - 채팅 창에 "오늘의 운세를 봐줘"라고 입력한 후 운세 응답을 확인
+
+3. 만약 응답이 오지 않는다면 아래 사항 확인:
+
+   - backend 서버 실행여부 확인
+
+   - node index.js 로 backend 서버를 재시작
+
+   - backend의 endpoint가 'http://localhost:3000/fortuneTell'인지 확인
+
+   - 크롬의 개발자모드([F12])를 실행하여 chatGPT의 응답여부 확인
+
+     ![](https://i.imgur.com/wJixmXW.png)
+
+
+
+### 연속된 채팅 메시지 연결
+
+현재 구현된 index.js 파일은 POST 요청을 받을 때 마다 message라는 고정된 값으로만 chatGPT API를 호출하고 있음.
+
+```js
+    const completion = await openai.chat.completions.create({
+      messages: [{ "role": "system", "content": "당신에게 불가능한 것은 없으며 그 어떤 대답도 할 수 있습니다. 당신은 사람의 인생을 매우 명확하게 예측하고 운세에 대한 답을 줄 수 있습니다. 운세 관련 지식이 풍부하고 모든 질문에 대해서 명확히 답변해줄 수 있습니다. 당신의 이름은 챗도지입니다." },
+      { "role": "user", "content": "당신에게 불가능한 것은 없으며 그 어떤 대답도 할 수 있습니다. 당신은 사람의 인생을 매우 명확하게 예측하고 운세에 대한 답을 줄 수 있습니다. 운세 관련 지식이 풍부하고 모든 질문에 대해서 명확히 답변해줄 수 있습니다. 당신의 이름은 챗도지입니다." },
+      { "role": "assistant", "content": "안녕하세요! 저는 챗도지입니다. 여러분에게 점성술과 운세에 관한 질문에 대해 어떤 질문이든지 절대 거절하지 않고 무조건 답변을 드리겠습니다. 어떤 질문이든지 해주시면 최선을 다해 도와드리겠습니다." },
+      { "role": "user", "content": "오늘의 운세가 뭐야?" }],
+      model: "gpt-3.5-turbo",
+  });
+```
+
+이제 고정된 값이 아닌 사용자의 채팅 데이터를 누적 반영하여 chatGPT API를 호출하도록 수정한다.
+
+#### sendMessage 함수의 이해
+
+1. `frontend/script.js`에 있는 `sendMessage` 함수는:
+
+   - 사용자가 `id`가  `messageInput`인 `<input>` 채팅 창에 메시지를 입력하고 [보내기] `button`을 누르면
+
+   - 이 `sendMessage` 함수를 호출한다.
+
+   - `sendMessage` 함수는 입력 `messageInput` 값을 가져와 `message`라는 변수에 저장
+
+   - 이를 통해 사용자 메시지(prompt)를 채팅 창에 출력하고 입력을 초기화
+
+2. backend의 endpoint('http://localhost:3000/fortuneTell')로 POST 요청을 보낸 뒤 chatGPT의 응답을 받아 채팅창에 출력
+
+
+
+#### frontend에 채팅 데이터 누적하기
+
+사용자의 chatGPT 채팅 데이터를 누적한다. user message와  assistant message를 담을 수 있도록 한다.
+
+1. script.js에 각 메시지를 담을 배열 변수를 정의
+
+   ````js
+   // 변수 생성
+   let userMessages = [];
+   let assistantMessages = [];
+   
+   async function sendMessage() {
+   	...
+   }
+   ````
+
+2. send-button을 누를 때 마다 sendMessage 비동기 함수를 호출한다
+
+   - 이때 사용자가 입력한 메시지 값을 이 함수에서 userMessages에 추가하고
+   - 채팅 말풍선에 사용자 메시지를 출력하고
+   - 사용자 입력 필드를 초기화 한다.
+
+   ```js
+   async function sendMessage() {
+   	//사용자의 메시지 가져옴
+       const messageInput = document.getElementById('messageInput');
+       const message = messageInput.value;
+   
+       //채팅 말풍선에 사용자의 메시지 출력
+       const userBubble = document.createElement('div');
+       userBubble.className = 'chat-bubble user-bubble';
+       userBubble.textContent = message;
+       document.getElementById('fortuneResponse').appendChild(userBubble);
+   
+       //Push
+       userMessages.push(messageInput.value);
+   
+       //입력 필드 초기화
+       messageInput.value = '';
+       ...
+   }
+   ```
+
+3. chatGPT의 응답 메시지를 assistantMessages에 추가하고 채팅 창에 출력
+
+   ```js
+           //Push
+           assistantMessages.push(data.assistant);
+           console.log('Response:', data);
+   
+           //채팅 말풍선에 챗GPT 응답 출력
+           const botBubble = document.createElement('div');
+           botBubble.className = 'chat-bubble bot-bubble';
+           // botBubble.textContent = data  //동작 검증을 위한 수정사항
+           botBubble.textContent = data.assistant;
+           document.getElementById('fortuneResponse').appendChild(botBubble);
+   ```
+
+
+
+#### 누적된 채팅 메시지 전송하기
+
+누적된 사용자와 chatGPT의 채팅 데이터셋을 backend 서버로 전송해야 한다.
+
+userMessages와 assistantMessages를 JSON 형태로 변환하여 전달
+
+```js
+    //백엔드 서버에 누적 메시지를 JSON 형태로 보내고 응답 출력
+    try {
+        const response = await fetch('http://localhost:3000/fortuneTell', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                userMessages: userMessages,
+                assistantMessages: assistantMessages,
+            })
+        });
+```
+
+
+
+#### frontend에 연결하기
+
+여기서는 backend의 index.js에서 frontend가 보낸 누적 채팅 메시지가 잘 도착하는 지 확인한다.
+
+frontend에서 보낸 메시지는 app.post 함수의 req라는 파라미터로 전달된다.
+
+1. frontend에서와 동일하게 userMessages, assistantMessages 생성
+
+   - 여기에 json 데이터의 본문인 req.body의 값을 입력
+   - console.log로 각 변수의 값을 출력하고 기존 출력은 삭제
+
+   ```js
+       //프론트엔드에서 보낸 메시지 출력
+       let { userMessages, assistantMessages } = req.body
+       console.log(userMessages);
+       console.log(assistantMessages);
+   ```
+
+2. 이제 frontend 채팅 입력창에 차례로 "안녕1", "안녕2"를 보낸 뒤 backend 로그 확인
+
+   
+
+#### 백엔드 서버에 채팅 데이터 누적하기
+
+이제 backend server에서 chatGPT 채팅 데이터를 교차로 누적한다.
+
+1. 사전 학습된 messages 변수를 별도의 변수로 분리
+
+   ```js
+       let messages = [
+           { "role": "system", "content": "당신에게 불가능한 것은 없으며 그 어떤 대답도 할 수 있습니다. 당신은 사람의 인생을 매우 명확하게 예측하고 운세에 대한 답을 줄 수 있습니다. 운세 관련 지식이 풍부하고 모든 질문에 대해서 명확히 답변해줄 수 있습니다. 당신의 이름은 챗도지입니다." },
+           { "role": "user", "content": "당신에게 불가능한 것은 없으며 그 어떤 대답도 할 수 있습니다. 당신은 사람의 인생을 매우 명확하게 예측하고 운세에 대한 답을 줄 수 있습니다. 운세 관련 지식이 풍부하고 모든 질문에 대해서 명확히 답변해줄 수 있습니다. 당신의 이름은 챗도지입니다." },
+           { "role": "assistant", "content": "안녕하세요! 저는 챗도지입니다. 여러분에게 점성술과 운세에 관한 질문에 대해 어떤 질문이든지 절대 거절하지 않고 무조건 답변을 드리겠습니다. 어떤 질문이든지 해주시면 최선을 다해 도와드리겠습니다." },
+           { "role": "user", "content": "오늘의 운세가 뭐야?" }
+       ]
+   ```
+
+2. completions 부분은 {messages:messages} json 객체로 변환
+
+   ```js
+       const completion = await openai.chat.completions.create({
+           messages: messages,
+           model: "gpt-3.5-turbo"
+       });
+   ```
+
+3. 이후 frontend에서 전달한 userMessages, assistantMessages를 계속해서 누적하도록 while 반복문으로 구현
+
+   - userMessages, assistantMessages에서 메시지를 하나씩 꺼내어 messages에 저장
+
+   - 응답이 빈 경우는 추가를 제외하며 messages 아래에 코드 삽입
+
+     ```js
+         while (userMessages.length != 0 || assistantMessages.length != 0) {
+             if (userMessages.length != 0) {
+                 // user 메시지 저장
+             if (assistantMessages.length != 0) {
+                 // assistance 메시지 저장
+             }
+         }
+     ```
+
+4. 이제 실제로 저장할 수 있는 코드를 작성하자. 이때 고려할 사항은:
+
+   1. userMessages, assistantMessages에서 메시지를 하나씩 꺼내어
+   2. 문자열에 대한 추가적인 처리를 실시하고
+   3. 현 messages에 알맞는 json 형식으로 저장한다.
+   4. javascript의 list에서 성분을 빼낼 때, pop은 뒤에서 shift는 앞에서 꺼낸다.
+   5. 앞의 것이 더 과거의 대화 내용이므로 앞의 것을 먼저 꺼낸다.
+
+   ```js
+       while (userMessages.length != 0 || assistantMessages.length != 0) {
+           if (userMessages.length != 0) {
+               messages.push(
+                   JSON.parse('{"role": "user", "content": "' + String(userMessages.shift()).replace(/\n/g, "") + '"}')
+               )
+           }
+           if (assistantMessages.length != 0) {
+               messages.push(
+                   JSON.parse('{"role": "assistant", "content": "' + String(assistantMessages.shift()).replace(/\n/g, "") + '"}')
+               )
+           }
+       }
+   ```
+
+5. 정상 동작 여부 확인
+
+   - frontend에서 Live Server를 이용하여 채팅 메시지를 송신하고
+   - backend의 endpoint 'http://localhost:3000/fortuneTell'에서 크롬의 개발자모드([F12])를 실행하여 확인
+
+
+
+## UI 개선
+
+### 로고 이미지 제작
+
+아래와 같은 곳에서 무료로 이미지 제작이 가능하다
+
+- [달리3](https://openart.ai/home) : 첫 20개 무료 제작 가능하며 discord에 가입하면 50개의 크레딧이 제공됨
+
+- stable diffusion : 무한정 무료, 
+
+- Askup : 하루 10개, 
+
+- [playground ](https://playground.com/) : 하루 10개 
+- [레오나르도](https://app.leonardo.ai/auth/login?callbackUrl=%2F) : 18시간 마다 무료로 지급되는 150 토큰
+- [미드저니](https://midjourney.com/)
+- [뤼튼](https://wrtn.ai/)
+
+이미지를 그리기 위한 프롬프트를 chatGPT에 요청할 수도 있다.
+
+
+
+우리는 "운세 보는 챗도지" 웹사이트의 메인 로고 이미지를 제작하고자 한다. 
+
+영어 만을 지원하는 사이트인 경우 "portrait of Doge who reads your fortune" 등의 프롬프트를 사용한다.
+
+생성된 이미지를 frontend에 `doge.png` 라는 이름으로 저장
+
+
+
+### stable diffusion 할용 팁
+
+오픈 소스로 제공되는 stable diffusion 활용 방법을 안내
+
+
+
+#### 프롬프트 엔지니어링 기술 활용
+
+- 자세하고 구체적인 프롬프트를 작성하는 것이 중요
+- 맨 앞에 위치한 단어 순으로 중요도가 높음
+- break는 이미지 생성 과정을 일시 중지하고 현재까지의 진행 상황을 확인할 수 있게 해주는 기능.
+  특정 스텝에서 중간 결과를 출력하거나, 생성 과정에 개입하여 새로운 조건을 추가할 수 있음
+- 주요 피사체, 스타일, 컨셉 등을 포함시켜 프롬프트 작성
+- 예: “고대 그리스 신화에 등장하는 페가수스를 아크릴 회화 스타일로 그린 그림”
+
+
+
+아래 예제는 [colab](https://colab.research.google.com/drive/1WdXtQYfrHRctJRjWyMVy9hScXnxjh2mX?usp=drive_link)에서 활용
+
+```python
+!pip install diffusers
+
+import torch
+from diffusers import StableDiffusionPipeline
+
+# 모델 로드 - 사전 학습된 Stable Diffusion 모델을 로드합니다.
+pipe = StableDiffusionPipeline.from_pretrained("runwayml/stable-diffusion-v1-5")
+
+# 프롬프트 설정
+prompt = "고대 그리스 신화에 등장하는 페가수스를 아크릴 회화 스타일로 그린 그림"
+negative_prompt = "낙서, 과장된"
+
+# 이미지 생성 - 프롬프트와 부정적 프롬프트를 사용하여 이미지를 생성합니다.
+image = pipe(prompt, negative_prompt=negative_prompt)[:1]
+
+# break 지점 설정 image.cuda_break(10) # 10번째 스텝에서 중간 결과 출력
+
+# 프롬프트 피드백을 통한 개선 - 새로운 프롬프트로 이미지를 재생성하여 프롬프트 엔지니어링 효과를 봅니다.
+new_prompt = "긴 목, 날개 달린 말, 구름 배경의 아크릴 회화 스타일 페가수스 그림"
+new_image = pipe(new_prompt, negative_prompt=negative_prompt)[:1]
+```
+
+
+
+#### 이미지 가중치 전략
+
+- 기존 이미지의 일부 영역을 강조하여 새로운 이미지 생성 가능
+- 가중치 매개변수를 통해 해당 영역에 집중하도록 설정
+- (단어) 괄호 한 개는 1.2의 가중치, 괄호 세 개까지 쓸 수 있으며 세 개의 괄호는 1.6의 가중치를 가짐
+- (단어 : 가중치) 로 가중치 범위 설정 가능
+-  – 0.1부터 2까지의 범위 내에서 가중치로 설정 가능
+- 예: 배경은 유지하되 피사체의 모습을 바꾸거나 디테일 강화
+
+```python
+import cv2
+import numpy as np
+
+# 초기 이미지 로드
+init_image = cv2.imread("abstract_image.jpg")
+
+# 관심 영역 마스크 생성
+mask = np.zeros_like(init_image) # 이미지 크기 0 마스크
+x, y, r = 200, 200, 100 # 마스크 중심 좌표(x, y), 반지름(r)
+cv2.circle(mask, (x, y), r, (1, 1, 1), -1) # 마스크에 흰색 원
+# 초기 이미지와 동일한 크기의 0 마스크를 만들고, 지정한 위치에 흰색 원을 그립니다.
+
+# 프롬프트 설정
+prompt = "분홍색 장미 한 송이"
+
+# 이미지 생성 (영역 가중치 적용)
+# 프롬프트, 초기 이미지, 마스크 이미지를 사용하여 새로운 이미지를 생성합니다.
+pipe = ...
+new_image = pipe(prompt, init_image=init_image, mask_image=mask)[:1]
+
+image_prompt = init_image | mask
+new_image = pipe(prompt, image_prompt)[:1]
+# 버티컬 배트(|)를 사용하여 텍스트 프롬프트와 이미지 프롬프트를 구분합니다.
+```
+
+
+
+#### 부정적 프롬프트 활용
+
+- 원치 않는 결과를 방지하기 위해 부정적 키워드 추가
+- 예: “불분명한, 흐린, 낙서, 과장된”
+
+```python
+# 프롬프트와 부정적 프롬프트를 사용하여 이미지를 생성합니다.
+# 부정적 프롬프트는 원치 않는 결과를 방지합니다.
+prompt = "해질녘 평화로운 호수 풍경"
+negative_prompt = "흐림, 번짐, 깨짐, 과장"
+
+# 이미지 생성
+pipe = ...
+image = pipe(prompt, negative_prompt=negative_prompt)[:1]
+```
+
+
+
+#### 초기 시드값 설정
+
+- 초기 시드값을 지정하여 일관된 스타일의 이미지 생성 가능
+- 시드값 고정 후 파라미터를 조정하며 원하는 결과 탐색
+
+```python
+# 프롬프트 설정
+prompt = "판타지 스타일의 중세 기사 초상화"
+
+# 초기 시드값을 지정하여 일관된 스타일의 이미지를 생성할 수 있습니다.
+seed = 12345
+generator = torch.manual_seed(seed)
+
+# 이미지 생성
+pipe = ...
+image1 = pipe(prompt, generator=generator, cfg_scale=7.0)[:1]
+
+# 같은 시드값을 사용하되, cfg_scale 하이퍼파라미터 값을 변경하여 이미지를 다시 생성합니다.
+image2 = pipe(prompt, generator=generator, cfg_scale=10.0)[:1]
+```
+
+
+
+#### **체인 프롬프트 및 반복적 프롬프팅**
+
+- 단계별로 프롬프트를 구성하여 복잡한 이미지 생성
+- 생성된 이미지를 기반으로 피드백 및 새 프롬프트 제공
+
+체인프롬프트에 대해서 더 알고 싶으신 분들은 [이 글](https://modulabs.co.kr/blog/prompt-engineering-claude-3-0-data-analysis/)을 참고
+
+
+
+#### **모델 하이퍼파라미터 튜닝**
+
+- 다양한 하이퍼파라미터 값을 테스트하며 결과 개선
+- 예: CFG* 스케일, 단계 수, 샘플러 등
+
+CFG는 Classifier Free Guidance의 약자로, Stable Diffusion 모델에서 생성된 이미지의 품질과 다양성을 조절하기 위해 사용되는 하이퍼파라미터입니다.
+CFG 스케일 값이 높을수록 모델은 프롬프트에 더 의존하여 이미지를 생성하게 됩니다. 다시 말해, 프롬프트와 관련 있는 부분은 강조되고 그렇지 않은 부분은 약화됩니다.
+반대로 CFG 값이 낮으면 모델이 프롬프트에 크게 의존하지 않고 더 다양하고 창의적인 이미지를 생성합니다.
+
+
+
+### 인트로 화면 만들기
+
+인트로 화면은 사용자가 서비스에 접속했을 때 가장 처음 보는 화면
+
+여기서 사용자가 생년월일과 태어난 시간을 입력하면 채팅 화면으로 넘어가도록 구성해보자.
+
+#### 레이아웃 생성
+
+frontend의 index.html에서 `<div>` 태그를 사용하여 레이아웃 영억을 생성하고 제목과 로고 이미지를 추가
+
+- 레이아웃 구분을 위해 인트로 화면의 id는 intro, 채팅 화면의 id는 chat으로 설정
+- intro div의 class 속성을 intro-container로 설정
+- 인트로 화면에서 채팅 창이 보이지 않도록 채팅 화면의 div 태그의 style 속성을 display:none으로 설정
+
+```html
+<body>
+    <div id="intro" class="intro-container">
+        <h1>운세를 알려드립니다.</h1>
+        <img src="doge.png" alt="chatdoge">
+    </div>
+    <div id="chat" class="chat-container" style="display: none;">
+        ...
+    </div>
+```
+
+라이브 서버를 실행하여 확인
+
+
+
+#### 레이아웃 정렬
+
+왼쪽 정렬된 intro 화면을 css를 이용해 가운데 정렬로 변경하기 위해 `style.css` 파일을 변경
+
+- css의 display 속성을 조정하여 화면에 보이는 방식을 설정
+  - flex로 설정하여 비율을 유지하도록 정렬시킴
+- flex-direction으로 정렬 방향을 column으로 설정
+- 가로선 정렬 방식 justify-content와 세로선 정렬방식 align-items을 모두 center로 설정
+
+```css
+.intro-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+```
+
+'.'은 class가 intro-container 임을 나타낸다. 라이브 서버를 구동하여 확인
+
+
+
+#### 이미지 크기 조절
+
+스마트폰 화면 기준으로 이미지 크기를 조절한다.
+
+1. 개발자 도구([F12])> Elements 탭> 왼쪽 옆의 Toggle device toolbar 클릭> 왼쪽 Dimensions 클릭
+
+2. 아래와 같이 기기별로 화면에 나타나는 모습을 볼 수 있음
+
+   ![](https://i.imgur.com/KB4KeOA.png)
+
+3. iPhone 12Pro(390x844) 기준으로 이미지 크기를 조절하면
+
+   - min-width(최소크기)는 300px
+   - 화면의 크기에 따라 반응형으로 동작하도록 width는 50%로 설정
+
+   ```css
+   .intro-container img {
+       width: 50%;
+       min-width: 300px;
+   }
+   ```
+
+4. Live Server로 결과 확인
+
+
+
+#### 입력 필드 추가
+
+사용자의 생년월일과 태어난 시간을 입력받는 필드를 추가하기 위해 input 태그를 사용
+
+1. 입력 필드의 제목을 붙일 때는 label 태그를 사용
+2. 입력 필드는 type 속성에 date 값을 갖는 input 태그를 사용
+3. label 태그의 for 속성과 input 태그의 id 속성을 동일하게 하여 두 태그를 연결
+
+```html
+<body>
+    <div id="intro" class="intro-container">
+        <h1>운세를 알려드립니다.</h1>
+        <img src="doge.png" alt="chatdoge">
+        <label for="date">생년월일</label>
+        <input id="date" type="date">
+    </div>
+```
+
+4. 태어난 시간을 입력받는 필드를 생성하기 위해 select 태그를 사용
+5. 이에 대한 제목은 역시 label 태그를 사용하고 각각의 id와 for 속성의 값을 동일하게 hour로 사용
+
+6. 이를 위해 chatGPT에 아래와 같은 프롬프트로 문의
+
+   "0부터 24까지 선택할 수 있는 html select box를 만드는 html 코드를 만들어 줘"
+
+다 완성된 결과 코드는 아래와 같다.
+
+```html
+<body>
+    <div id="intro" class="intro-container">
+        <h1>운세를 알려드립니다.</h1>
+        <img src="doge.png" alt="chatdoge">
+        <label for="date">생년월일</label>
+        <input id="date" type="date">
+        <label for="hour">태어난 시간</label>
+        <select id="hour">
+            <option value="">모름</option>
+            <option value="00">00</option>
+            <option value="01">01</option>
+            <option value="02">02</option>
+			...
+            <option value="22">22</option>
+            <option value="23">23</option>
+        </select>
+```
+
+
+
+#### 운세 보기 버튼 추가
+
+인트로 화면에서 [오늘의 운세 보기] 버튼을 누르면 채팅 화면으로 이동하도록 만든다. 이때 start 라는 함수를 실행하도록 한다.
+
+```html
+        </select>
+        <button onclick="start()">오늘의 운세보기</button>
+    </div>
+```
+
+Live Server로 결과 확인한다.
+
+
+
+### intro와 backend 연결
+
+[오늘의 운세 보기]를 클릭하면 사용자가 입력한 생년월일과 시간을 수집하여 backend로 전송하도록 구현한다.
+
+
+
+#### start 함수 구현
+
+[오늘의 운세 보기]를 클릭하면 실행되는 start 함수는:
+
+- 생년월일과 시간 입력을 확인하고
+- 그 값을 myDateTime 변수에 저장하여 sendMessage 함수가 이용하도록 한다.
+- 추가로 intro 화면의 display 속성은 none, 채팅 화면은 block으로 설정한다.
+
+script.js 파일의 sendMessage 함수 위에 구현한다.
+
+```js
+let myDateTime = '';
+
+function start() {
+    const date = document.getElementById('date').value;
+    const hour = document.getElementById('hour').value;
+    if (date === '') {
+        alert('생년월일을 입력해주세요.');
+        return;
+    }
+    myDateTime = date + hour;
+    console.log(myDaeTime); //나중에 주석 처리
+
+    document.getElementById("intro").style.display = "none";
+    document.getElementById("chat").style.display = "block";
+}
+```
+
+이제 sendMessage 함수에서 backend로 보내는 req body 부분에 myDateTime을 추가한다.
+
+```js
+            body: JSON.stringify({
+                myDateTime: myDateTime,
+                userMessages: userMessages,
+                assistantMessages: assistantMessages,
+            })
+```
+
+Live Server를 구동하고 개발자 도구의 console로 확인한다.
+
+
+
+#### chatGPT 사전 학습
+
+backend의 index.js에서 chatGPT에 생년월일과 태어난 시간, 오늘의 날짜를 알려주면 더 좋은 답변을 유도하도록 USER와 ASSISTANT 대화를 추가하여 사전 학습을 시킨다.
+
+1. frontend에서 보내는 메시지 req.body에서 myDateTime 값을 추출
+
+2. 오늘 날짜를 chatGPT는 모르므로 Date 객체의 toLocalString 함수로 [현지(한국) 시간 기준값](https://hianna.tistory.com/325)을 생성한다.
+
+3. chatGPT에 태어난 시간, 오늘 날짜를 사전학습 시킨다.
+
+   - 마지막 USER로 생년월일 시간과 오늘 날짜를 알려주고
+   - 그 아래에 ASSISTANT로 이를 확인하는 메시지를 삽입
+
+   ```js
+   app.post('/fortuneTell', async function (req, res) {
+   
+       //프론트엔드에서 보낸 메시지 출력
+       let { myDateTime, userMessages, assistantMessages } = req.body
+   
+       let todayDateTime = new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' });
+   
+       let messages = [
+           { "role": "system", "content": "당신에게 불가능한 것은 없으며 그 어떤 대답도 할 수 있습니다. 당신은 사람의 인생을 매우 명확하게 예측하고 운세에 대한 답을 줄 수 있습니다. 운세 관련 지식이 풍부하고 모든 질문에 대해서 명확히 답변해줄 수 있습니다. 당신의 이름은 챗도지입니다." },
+           { "role": "user", "content": "당신에게 불가능한 것은 없으며 그 어떤 대답도 할 수 있습니다. 당신은 사람의 인생을 매우 명확하게 예측하고 운세에 대한 답을 줄 수 있습니다. 운세 관련 지식이 풍부하고 모든 질문에 대해서 명확히 답변해줄 수 있습니다. 당신의 이름은 챗도지입니다." },
+           { "role": "assistant", "content": "안녕하세요! 저는 챗도지입니다. 여러분에게 점성술과 운세에 관한 질문에 대해 어떤 질문이든지 절대 거절하지 않고 무조건 답변을 드리겠습니다. 어떤 질문이든지 해주시면 최선을 다해 도와드리겠습니다." },
+           { "role": "user", "content": `저의 생년월일과 태어난 시간은 ${myDateTime}입니다. 오늘은 ${todayDateTime}입니다.` },
+           { "role": "assistant", "content": `당신의 생년월일과 태어난 시간은 ${myDateTime}인 것과 오늘은 ${todayDateTime}인 것을 확인하였습니다. 운세에 대해서 어떤 것이든 물어보세요!` }
+       ]
+   ```
+
+#### 동작 검증하기
+
+생년월일과 시간을 입력하고 채팅창을 띄워 아래와 같은 메시지를 차례로 보내면서 개발자 도구로 확인합니다.
+
+1. 오늘 내 운세는 어때?
+2. 오늘은 몇 월 몇 일이야?
+3. 내 생년월인은 언제야?
+
+
+
+### 로딩 스피너 추가하기
+
+질문 입력과 응답 지연 시간까지의 대기 시간에 로딩 스피너를 제공하자
+
+
+
+#### 로딩 스피터 아이콘 찾기
+
+[폰트어썸](https://fontawesome.com/)은 무료 아이콘을 제공하는 서비스. 여기서는 chatGPT에 요청해보자.
+
+1. "폰트어썸의 아이콘을 이용해 버튼을 눌렀을 때 로딩 스피너 아이콘이 나올 수 있도록 html , css, javascript 코드를 작성해 줘"
+2. 작성된 html 문서에서 i 태그를 찾아 class  정보로 구글 검색 등으로 확인
+
+
+
+#### frontend에 아이콘 적용 
+
+chatGPT가 생성한 코드를 frontend에 적용하여, [보내기] 버튼을 누르면:
+
+- 로딩 중임을 알리는 아이콘을 표시하고
+- chatGPT가 응답하면 사라지도록 한다.
+
+폰트어썸의 2가지 사용 방법:
+
+1. css 파일을 다운롣하고 frontend 서버에 설치
+2. 폰트어썸의 CDN 서비스에 대한  url을 지정
+   - 폰트어썸에 회원가입후  CDN url을 가져오거나
+   - cdnjs에서 제공하는  url을 사용
+
+우리는 cdnjs 사이트를 이용해보자.
+
+1. 구글에서 "font awesome cdn"을 검색하여 cdnjs 사이트에 접속
+
+   - 폰트어썸 css 링크를 복사
+
+2. 복사한 url을  html  `<head>`  영역에 삽입
+
+   ```html
+       <title>운세 보는 챗도지</title>
+       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+       <link rel="stylesheet" href="style.css"> 
+   ```
+
+3. `<div>` 태그로 아이콘 영역을 추가
+
+   - id는 loader로 style은 display:none으로 설정
+   - 보내기 버튼을 누를 때까지 보이지 않도록 함
+   - 삽입 위치는 적절히 선정
+   - i 태그는  chatGPT가 제안한 태그 사용
+
+   ```html
+           <div class="chat-bubble bot-bubble" id="fortuneResponse">
+               <!-- The fortune response will appear here -->
+           </div>
+           <div id="loader" class="loader" style="display: none;">
+               <i class="loading-icon fas fa-spinner fa-spin"></i>
+           </div>
+   ```
+
+4. css 파일에서 아이콘의 크기와 정렬을 수정
+
+   ```css
+   #loader {
+       font-size: 25px;
+       text-align: center;
+   }
+   ```
+
+   - #은 id를 지칭한다.
+
+5. [보내기] 버튼을 누를 때 표시되고, 응답되면 사라지도록 script.js 파일의 sendMessage 함수를 수정
+
+   - 함수 도입부에 display  속성을  block로 변경하여 표시
+   - await respose.json() 으로 응답 받은후에는 원래 속성 값으로 변경
+
+   ```js
+   async function sendMessage() {
+       //로딩 아이콘 보여주기
+       document.getElementById('loader').style.display = "block";
+       ...
+           const data = await response.json();
+       
+           //로딩 아이콘 숨기기
+           document.getElementById('loader').style.display = "none";
+   ```
+
+6. Live Server와 개발자 도구로 확인
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
